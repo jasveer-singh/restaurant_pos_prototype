@@ -72,6 +72,8 @@ export interface Payment {
   paidAt: string
 }
 
+export type OrderType = 'takeaway' | 'dine-in'
+
 export type BillStatus = 'open' | 'paid' | 'void'
 
 export interface Bill {
@@ -79,6 +81,7 @@ export interface Bill {
   number: number
   createdAt: string
   status: BillStatus
+  orderType: OrderType
   lines: BillLine[]
   customerId?: string
   payments: Payment[]
