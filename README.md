@@ -2,7 +2,7 @@
 
 Browser-based POS prototype for a 12-outlet quick-service café chain, designed for a lunch rush of ~120 bills/hour per outlet.
 
-**Live link:** (to fill after Vercel deploy)
+**Live link:** https://restaurantposprototype.vercel.app/
 
 ## Run locally
 - Prerequisite: Node 24 (developed on v24.21.0)
