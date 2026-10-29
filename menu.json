@@ -1,0 +1,347 @@
+{
+  "meta": {
+    "restaurant": "Chai & Co.",
+    "currency": "INR",
+    "pricesIncludeTax": false,
+    "gstRatePercent": 5,
+    "cgstRatePercent": 2.5,
+    "sgstRatePercent": 2.5
+  },
+  "categories": [
+    { "id": "cat_chai", "name": "Chai", "sortOrder": 1 },
+    { "id": "cat_coffee", "name": "Coffee", "sortOrder": 2 },
+    { "id": "cat_coolers", "name": "Coolers", "sortOrder": 3 },
+    { "id": "cat_snacks", "name": "Snacks", "sortOrder": 4 },
+    { "id": "cat_bakery", "name": "Bakery & Desserts", "sortOrder": 5 }
+  ],
+  "addOnGroups": [
+    {
+      "id": "grp_chai",
+      "name": "Chai customisation",
+      "maxSelect": 3,
+      "options": [
+        { "id": "ao_extra_ginger", "name": "Extra Ginger", "price": 10 },
+        { "id": "ao_extra_elaichi", "name": "Extra Elaichi", "price": 10 },
+        { "id": "ao_jaggery", "name": "Jaggery instead of Sugar", "price": 10 },
+        { "id": "ao_less_sugar", "name": "Less Sugar", "price": 0 },
+        { "id": "ao_no_sugar", "name": "No Sugar", "price": 0 }
+      ]
+    },
+    {
+      "id": "grp_milk",
+      "name": "Milk",
+      "maxSelect": 1,
+      "options": [
+        { "id": "ao_oat_milk", "name": "Oat Milk", "price": 40 },
+        { "id": "ao_almond_milk", "name": "Almond Milk", "price": 40 },
+        { "id": "ao_soy_milk", "name": "Soy Milk", "price": 30 }
+      ]
+    },
+    {
+      "id": "grp_coffee",
+      "name": "Coffee extras",
+      "maxSelect": 3,
+      "options": [
+        { "id": "ao_extra_shot", "name": "Extra Shot", "price": 40 },
+        { "id": "ao_hazelnut", "name": "Hazelnut Syrup", "price": 30 },
+        { "id": "ao_caramel", "name": "Caramel Syrup", "price": 30 },
+        { "id": "ao_whipped_cream", "name": "Whipped Cream", "price": 25 }
+      ]
+    },
+    {
+      "id": "grp_cooler",
+      "name": "Cooler extras",
+      "maxSelect": 2,
+      "options": [
+        { "id": "ao_ice_cream", "name": "Ice Cream Scoop", "price": 40 },
+        { "id": "ao_no_ice", "name": "No Ice", "price": 0 }
+      ]
+    },
+    {
+      "id": "grp_snack",
+      "name": "Snack extras",
+      "maxSelect": 3,
+      "options": [
+        { "id": "ao_extra_cheese", "name": "Extra Cheese", "price": 30 },
+        { "id": "ao_extra_butter", "name": "Extra Butter", "price": 15 },
+        { "id": "ao_extra_pav", "name": "Extra Pav", "price": 15 },
+        { "id": "ao_extra_chutney", "name": "Extra Chutney", "price": 0 }
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "itm_masala_chai", "code": "MC", "name": "Masala Chai", "categoryId": "cat_chai",
+      "isVeg": true, "isBestSeller": true, "station": "beverage",
+      "variants": [
+        { "id": "v_cutting", "name": "Cutting", "price": 20 },
+        { "id": "v_regular", "name": "Regular", "price": 35 },
+        { "id": "v_large", "name": "Large", "price": 50 }
+      ],
+      "addOnGroupIds": ["grp_chai", "grp_milk"]
+    },
+    {
+      "id": "itm_adrak_chai", "code": "AC", "name": "Adrak Chai", "categoryId": "cat_chai",
+      "isVeg": true, "isBestSeller": true, "station": "beverage",
+      "variants": [
+        { "id": "v_cutting", "name": "Cutting", "price": 20 },
+        { "id": "v_regular", "name": "Regular", "price": 35 },
+        { "id": "v_large", "name": "Large", "price": 50 }
+      ],
+      "addOnGroupIds": ["grp_chai", "grp_milk"]
+    },
+    {
+      "id": "itm_elaichi_chai", "code": "EC", "name": "Elaichi Chai", "categoryId": "cat_chai",
+      "isVeg": true, "isBestSeller": false, "station": "beverage",
+      "variants": [
+        { "id": "v_cutting", "name": "Cutting", "price": 20 },
+        { "id": "v_regular", "name": "Regular", "price": 35 },
+        { "id": "v_large", "name": "Large", "price": 50 }
+      ],
+      "addOnGroupIds": ["grp_chai", "grp_milk"]
+    },
+    {
+      "id": "itm_kulhad_chai", "code": "KC", "name": "Kulhad Chai", "categoryId": "cat_chai",
+      "isVeg": true, "isBestSeller": true, "station": "beverage",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 45 },
+        { "id": "v_large", "name": "Large", "price": 60 }
+      ],
+      "addOnGroupIds": ["grp_chai"]
+    },
+    {
+      "id": "itm_irani_chai", "code": "IC", "name": "Irani Chai", "categoryId": "cat_chai",
+      "isVeg": true, "isBestSeller": false, "station": "beverage",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 40 },
+        { "id": "v_large", "name": "Large", "price": 55 }
+      ],
+      "addOnGroupIds": ["grp_chai"]
+    },
+    {
+      "id": "itm_lemon_tea", "code": "LT", "name": "Lemon Tea", "categoryId": "cat_chai",
+      "isVeg": true, "isBestSeller": false, "station": "beverage",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 30 },
+        { "id": "v_large", "name": "Large", "price": 45 }
+      ],
+      "addOnGroupIds": []
+    },
+    {
+      "id": "itm_green_tea", "code": "GT", "name": "Green Tea", "categoryId": "cat_chai",
+      "isVeg": true, "isBestSeller": false, "station": "beverage",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 40 },
+        { "id": "v_large", "name": "Large", "price": 55 }
+      ],
+      "addOnGroupIds": []
+    },
+    {
+      "id": "itm_filter_coffee", "code": "FC", "name": "Filter Coffee", "categoryId": "cat_coffee",
+      "isVeg": true, "isBestSeller": true, "station": "beverage",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 40 },
+        { "id": "v_large", "name": "Large", "price": 55 }
+      ],
+      "addOnGroupIds": ["grp_milk"]
+    },
+    {
+      "id": "itm_cappuccino", "code": "CP", "name": "Cappuccino", "categoryId": "cat_coffee",
+      "isVeg": true, "isBestSeller": true, "station": "beverage",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 120 },
+        { "id": "v_large", "name": "Large", "price": 150 }
+      ],
+      "addOnGroupIds": ["grp_coffee", "grp_milk"]
+    },
+    {
+      "id": "itm_latte", "code": "LA", "name": "Cafe Latte", "categoryId": "cat_coffee",
+      "isVeg": true, "isBestSeller": false, "station": "beverage",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 130 },
+        { "id": "v_large", "name": "Large", "price": 160 }
+      ],
+      "addOnGroupIds": ["grp_coffee", "grp_milk"]
+    },
+    {
+      "id": "itm_americano", "code": "AM", "name": "Americano", "categoryId": "cat_coffee",
+      "isVeg": true, "isBestSeller": false, "station": "beverage",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 100 },
+        { "id": "v_large", "name": "Large", "price": 130 }
+      ],
+      "addOnGroupIds": ["grp_coffee"]
+    },
+    {
+      "id": "itm_mocha", "code": "MO", "name": "Cafe Mocha", "categoryId": "cat_coffee",
+      "isVeg": true, "isBestSeller": false, "station": "beverage",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 140 },
+        { "id": "v_large", "name": "Large", "price": 170 }
+      ],
+      "addOnGroupIds": ["grp_coffee", "grp_milk"]
+    },
+    {
+      "id": "itm_hot_chocolate", "code": "HC", "name": "Hot Chocolate", "categoryId": "cat_coffee",
+      "isVeg": true, "isBestSeller": false, "station": "beverage",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 130 },
+        { "id": "v_large", "name": "Large", "price": 160 }
+      ],
+      "addOnGroupIds": ["grp_milk"]
+    },
+    {
+      "id": "itm_cold_coffee", "code": "CC", "name": "Cold Coffee", "categoryId": "cat_coolers",
+      "isVeg": true, "isBestSeller": true, "station": "beverage",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 140 },
+        { "id": "v_large", "name": "Large", "price": 170 }
+      ],
+      "addOnGroupIds": ["grp_coffee", "grp_milk", "grp_cooler"]
+    },
+    {
+      "id": "itm_iced_lemon_tea", "code": "IT", "name": "Iced Lemon Tea", "categoryId": "cat_coolers",
+      "isVeg": true, "isBestSeller": false, "station": "beverage",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 90 },
+        { "id": "v_large", "name": "Large", "price": 120 }
+      ],
+      "addOnGroupIds": ["grp_cooler"]
+    },
+    {
+      "id": "itm_mango_lassi", "code": "ML", "name": "Mango Lassi", "categoryId": "cat_coolers",
+      "isVeg": true, "isBestSeller": false, "station": "beverage",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 90 },
+        { "id": "v_large", "name": "Large", "price": 120 }
+      ],
+      "addOnGroupIds": ["grp_cooler"]
+    },
+    {
+      "id": "itm_sweet_lassi", "code": "SL", "name": "Sweet Lassi", "categoryId": "cat_coolers",
+      "isVeg": true, "isBestSeller": false, "station": "beverage",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 80 },
+        { "id": "v_large", "name": "Large", "price": 110 }
+      ],
+      "addOnGroupIds": ["grp_cooler"]
+    },
+    {
+      "id": "itm_lime_soda", "code": "LS", "name": "Fresh Lime Soda", "categoryId": "cat_coolers",
+      "isVeg": true, "isBestSeller": false, "station": "beverage",
+      "variants": [
+        { "id": "v_sweet", "name": "Sweet", "price": 70 },
+        { "id": "v_salted", "name": "Salted", "price": 70 },
+        { "id": "v_mixed", "name": "Sweet & Salted", "price": 70 }
+      ],
+      "addOnGroupIds": ["grp_cooler"]
+    },
+    {
+      "id": "itm_rose_milk", "code": "RM", "name": "Rose Milk", "categoryId": "cat_coolers",
+      "isVeg": true, "isBestSeller": false, "station": "beverage",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 70 },
+        { "id": "v_large", "name": "Large", "price": 90 }
+      ],
+      "addOnGroupIds": ["grp_cooler"]
+    },
+    {
+      "id": "itm_vada_pav", "code": "VP", "name": "Vada Pav", "categoryId": "cat_snacks",
+      "isVeg": true, "isBestSeller": true, "station": "kitchen",
+      "variants": [
+        { "id": "v_single", "name": "Single", "price": 25 },
+        { "id": "v_double", "name": "Double", "price": 45 }
+      ],
+      "addOnGroupIds": ["grp_snack"]
+    },
+    {
+      "id": "itm_bun_maska", "code": "BM", "name": "Bun Maska", "categoryId": "cat_snacks",
+      "isVeg": true, "isBestSeller": true, "station": "kitchen",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 40 }
+      ],
+      "addOnGroupIds": ["grp_snack"]
+    },
+    {
+      "id": "itm_samosa", "code": "SA", "name": "Samosa", "categoryId": "cat_snacks",
+      "isVeg": true, "isBestSeller": true, "station": "kitchen",
+      "variants": [
+        { "id": "v_1pc", "name": "1 pc", "price": 20 },
+        { "id": "v_2pc", "name": "2 pcs", "price": 38 }
+      ],
+      "addOnGroupIds": ["grp_snack"]
+    },
+    {
+      "id": "itm_poha", "code": "PO", "name": "Kanda Poha", "categoryId": "cat_snacks",
+      "isVeg": true, "isBestSeller": false, "station": "kitchen",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 60 }
+      ],
+      "addOnGroupIds": []
+    },
+    {
+      "id": "itm_veg_sandwich", "code": "VS", "name": "Veg Sandwich", "categoryId": "cat_snacks",
+      "isVeg": true, "isBestSeller": false, "station": "kitchen",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 90 }
+      ],
+      "addOnGroupIds": ["grp_snack"]
+    },
+    {
+      "id": "itm_cheese_grill", "code": "CG", "name": "Cheese Grilled Sandwich", "categoryId": "cat_snacks",
+      "isVeg": true, "isBestSeller": false, "station": "kitchen",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 130 }
+      ],
+      "addOnGroupIds": ["grp_snack"]
+    },
+    {
+      "id": "itm_masala_maggi", "code": "MM", "name": "Masala Maggi", "categoryId": "cat_snacks",
+      "isVeg": true, "isBestSeller": false, "station": "kitchen",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 80 }
+      ],
+      "addOnGroupIds": ["grp_snack"]
+    },
+    {
+      "id": "itm_osmania", "code": "OB", "name": "Osmania Biscuits (4 pcs)", "categoryId": "cat_bakery",
+      "isVeg": true, "isBestSeller": false, "station": "counter",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 40 }
+      ],
+      "addOnGroupIds": []
+    },
+    {
+      "id": "itm_khari", "code": "KH", "name": "Khari (4 pcs)", "categoryId": "cat_bakery",
+      "isVeg": true, "isBestSeller": false, "station": "counter",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 30 }
+      ],
+      "addOnGroupIds": []
+    },
+    {
+      "id": "itm_veg_puff", "code": "PF", "name": "Veg Puff", "categoryId": "cat_bakery",
+      "isVeg": true, "isBestSeller": false, "station": "counter",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 35 }
+      ],
+      "addOnGroupIds": []
+    },
+    {
+      "id": "itm_brownie", "code": "BR", "name": "Choco Walnut Brownie", "categoryId": "cat_bakery",
+      "isVeg": true, "isBestSeller": false, "station": "counter",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 90 }
+      ],
+      "addOnGroupIds": []
+    },
+    {
+      "id": "itm_banana_cake", "code": "BW", "name": "Banana Walnut Cake (slice)", "categoryId": "cat_bakery",
+      "isVeg": true, "isBestSeller": false, "station": "counter",
+      "variants": [
+        { "id": "v_regular", "name": "Regular", "price": 80 }
+      ],
+      "addOnGroupIds": []
+    }
+  ]
+}
