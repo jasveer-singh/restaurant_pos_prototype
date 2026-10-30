@@ -9,10 +9,12 @@ const KEYS = {
   bills: 'bills',
   payments: 'payments',
   counter: 'billCounter',
+  customers: 'customers',
   defaultMode: 'defaultPayMode',
 } as const
 
 export const getBills = () => readJSON<Bill[]>(KEYS.bills) ?? []
+export const getCustomers = () => readJSON<Customer[]>(KEYS.customers) ?? []
 export const getPayments = () => readJSON<Payment[]>(KEYS.payments) ?? []
 
 export function getDefaultMode(): PaymentMode {
@@ -35,6 +37,7 @@ export interface SaveBillInput {
   totals: BillTotals
   billingMs: number
   payments: PaymentInput[]
+  customerId?: string | null
 }
 
 const uid = () => crypto.randomUUID()
@@ -49,7 +52,7 @@ export function saveBill(input: SaveBillInput): { bill: Bill; payments: Payment[
     token: num.token,
     orderType: input.orderType,
     cashier: 'Cashier 1',
-    customerId: null,
+    customerId: input.customerId ?? null,
     createdAt: now.toISOString(),
     status: 'completed',
     billingMs: input.billingMs,
@@ -67,6 +70,9 @@ export function saveBill(input: SaveBillInput): { bill: Bill; payments: Payment[
     }
     return rec
   })
+  if (bill.customerId && !getCustomers().some((c) => c.id === bill.customerId)) {
+    writeJSON(KEYS.customers, [...getCustomers(), { id: bill.customerId, phone: bill.customerId, createdAt: bill.createdAt }])
+  }
   writeJSON(KEYS.payments, [...getPayments(), ...payments])
   writeJSON(KEYS.bills, [...getBills(), bill])
   writeJSON(KEYS.counter, num.counter)
@@ -89,7 +95,7 @@ export function incrementPrintCount(billId: string): number {
 }
 
 export const getCustomer = (id: string | null) =>
-  id ? (readJSON<Customer[]>('customers') ?? []).find((c) => c.id === id) ?? null : null
+  id ? getCustomers().find((c) => c.id === id) ?? null : null
 
 export const getAutoPrint = (): boolean => readJSON<boolean>('autoPrint') === true // default OFF
 export const setAutoPrint = (on: boolean) => writeJSON('autoPrint', on)

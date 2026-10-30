@@ -4,10 +4,15 @@ import { formatRupees, toPaise } from '../lib/money'
 import { getAddOnGroups, getCategories, getItems } from '../lib/seed'
 import { calculateTotals, lineGross, lineNet } from '../lib/totals'
 import type { Discount } from '../lib/totals'
+import { lineKey } from '../lib/cart'
+import type { CartLine } from '../lib/cart'
+import { mergeLines, repeatLines } from '../lib/customers'
 import { freshDraft } from '../lib/billState'
-import { getAutoPrint, getCustomer, getDefaultMode, incrementPrintCount, saveBill, setAutoPrint, setDefaultMode } from '../lib/billStore'
+import { getAutoPrint, getBills, getCustomer, getCustomers, getDefaultMode, getPayments, incrementPrintCount, saveBill, setAutoPrint, setDefaultMode } from '../lib/billStore'
 import type { PaymentInput } from '../lib/billStore'
 import type { Bill, BillLine, Item, OrderType, Payment, PaymentMode } from '../lib/types'
+import DaySummaryView from './DaySummaryView'
+import CustomerPanel from './CustomerPanel'
 import ConfigModal from './ConfigModal'
 import type { Config } from './ConfigModal'
 import DiscountModal from './DiscountModal'
@@ -15,20 +20,6 @@ import { BillReceiptView, KotReceiptView } from './Receipt'
 import { buildBillReceipt, buildKotReceipt } from '../lib/receipts'
 import { CashModal, MODE_LABEL, QrModal, ReceiptsModal, SettledSummary, SplitModal } from './PaymentModals'
 import type { SplitPart } from './PaymentModals'
-
-interface CartLine {
-  id: string
-  itemId: string
-  itemName: string
-  variantId: string
-  variantName: string
-  showVariant: boolean
-  addOnIds: string[]
-  addOnNames: string[]
-  unitPrice: number // paise
-  quantity: number
-  discount: Discount | null
-}
 
 const POPULAR = 'popular'
 const MODES: PaymentMode[] = ['upi', 'card', 'cash']
@@ -54,8 +45,6 @@ function searchItems(items: Item[], query: string): Item[] {
     .map((x) => x.i)
 }
 
-const lineKey = (itemId: string, c: Config) =>
-  [itemId, c.variantId, ...[...c.addOnIds].sort()].join('|')
 
 export default function BillingScreen() {
   const categories = useMemo(() => [...getCategories()].sort((a, b) => a.sortOrder - b.sortOrder), [])
@@ -78,6 +67,13 @@ export default function BillingScreen() {
   const [autoPrint, setAutoPrintState] = useState(getAutoPrint)
   const [printJob, setPrintJob] = useState<{ bill: Bill; payments: Payment[] } | null>(null)
   const [viewOpen, setViewOpen] = useState(false)
+  const [summaryOpen, setSummaryOpen] = useState(false)
+  const [customerPhone, setCustomerPhone] = useState<string | null>(null) // attached customer
+  const [customerText, setCustomerText] = useState('')
+  const [repeatNotice, setRepeatNotice] = useState<string | null>(null)
+  const [customers, setCustomers] = useState(getCustomers)
+  const [bills, setBills] = useState(getBills)
+  const [allPayments, setAllPayments] = useState(getPayments)
   const autoPrintedRef = useRef<string | null>(null)
   const savingRef = useRef(false) // set on the first Settle press so a double tap can't save twice
   const startRef = useRef<number | null>(null) // billing timer start
@@ -90,7 +86,7 @@ export default function BillingScreen() {
   const totals = calculateTotals(lines, billDiscount)
 
   const addLine = (item: Item, c: Config) => {
-    const id = lineKey(item.id, c)
+    const id = lineKey(item.id, c.variantId, c.addOnIds)
     setLines((prev) =>
       prev.some((l) => l.id === id)
         ? prev.map((l) => (l.id === id ? { ...l, quantity: l.quantity + 1 } : l))
@@ -123,6 +119,13 @@ export default function BillingScreen() {
     addLine(item, { variantId: v.id, variantName: v.name, addOnIds: [], addOnNames: [], unitPrice: toPaise(v.price) })
   }
 
+  const repeatOrder = (b: Bill) => {
+    if (locked) return
+    const { lines: newLines, skipped } = repeatLines(b, { items, addOnGroups: groups })
+    setLines((prev) => mergeLines(prev, newLines))
+    setRepeatNotice(skipped.length > 0 ? `Skipped, no longer on the menu: ${skipped.join(', ')}` : null)
+  }
+
   const changeQty = (id: string, delta: number) =>
     setLines((prev) =>
       prev.flatMap((l) => {
@@ -144,7 +147,9 @@ export default function BillingScreen() {
     } else if (startRef.current === null) startRef.current = Date.now()
   }, [lines.length])
 
-  const canSettle = lines.length > 0 && !locked
+  // text in the customer field with nobody attached blocks Settle
+  const customerPending = customerText.trim() !== '' && !customerPhone
+  const canSettle = lines.length > 0 && !locked && !customerPending
   const zeroDue = lines.length > 0 && totals.total === 0
 
   const finalize = (payments: PaymentInput[]) => {
@@ -176,9 +181,13 @@ export default function BillingScreen() {
           roundOff: totals.roundOff,
           total: totals.total,
         },
+        customerId: customerPhone,
         billingMs: Date.now() - (startRef.current ?? Date.now()),
         payments,
       })
+      setCustomers(getCustomers())
+      setBills(getBills())
+      setAllPayments(getPayments())
       setPayModal(null)
       setResult(saved)
     } catch {
@@ -211,6 +220,9 @@ export default function BillingScreen() {
     setLocked(false)
     setMode(draft.mode)
     setTxnRef(draft.txnRef)
+    setCustomerPhone(null)
+    setCustomerText('')
+    setRepeatNotice(null)
     if (!keepSearch) setSearch('')
     setViewOpen(false)
     setResult(null)
@@ -224,6 +236,7 @@ export default function BillingScreen() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (summaryOpen) return // the day summary handles its own keys
       if (result) {
         if (e.key === 'Escape' && viewOpen) setViewOpen(false)
         else if (e.key === 'Enter' && e.shiftKey) {
@@ -288,6 +301,7 @@ export default function BillingScreen() {
             </button>
           ))}
         </div>
+        <button className="btn" onClick={() => setSummaryOpen(true)}>Day summary</button>
         <input
           className="search"
           type="search"
@@ -331,6 +345,29 @@ export default function BillingScreen() {
         </section>
 
         <aside className="cart">
+          <CustomerPanel
+            customers={customers}
+            bills={bills}
+            payments={allPayments}
+            attached={customerPhone}
+            text={customerText}
+            onText={(t) => {
+              setCustomerText(t)
+              setRepeatNotice(null)
+            }}
+            onAttach={(phone) => {
+              setCustomerPhone(phone)
+              setCustomerText('')
+              setRepeatNotice(null)
+            }}
+            onDetach={() => {
+              setCustomerPhone(null)
+              setRepeatNotice(null)
+            }}
+            onRepeat={repeatOrder}
+            notice={repeatNotice}
+            disabled={locked}
+          />
           {result ? (
             <SettledSummary
               bill={result.bill}
@@ -440,6 +477,7 @@ export default function BillingScreen() {
         </aside>
       </div>
 
+      {summaryOpen && <DaySummaryView bills={bills} payments={allPayments} onClose={() => setSummaryOpen(false)} />}
       {printJob &&
         createPortal(
           <div id="print-root">

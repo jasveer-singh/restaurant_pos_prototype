@@ -47,9 +47,9 @@ export interface Item {
 }
 
 export interface Customer {
-  id: string
-  name: string
+  id: string // the normalised 10-digit phone
   phone: string
+  createdAt: string
 }
 
 export type OrderType = 'takeaway' | 'dine-in'
