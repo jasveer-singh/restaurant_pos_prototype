@@ -1,3 +1,5 @@
+import type { Discount } from './totals'
+
 export interface MenuMeta {
   restaurant: string
   currency: string
@@ -50,43 +52,56 @@ export interface Customer {
   phone: string
 }
 
-export interface BillLine {
-  id: string
-  itemId: string
-  itemName: string
-  variantId: string
-  variantName: string
-  addOnIds: string[]
-  addOnNames: string[]
-  unitPrice: number
-  quantity: number
-  lineTotal: number
-}
-
-export type PaymentMethod = 'cash' | 'card' | 'upi'
-
-export interface Payment {
-  id: string
-  method: PaymentMethod
-  amount: number
-  paidAt: string
-}
-
 export type OrderType = 'takeaway' | 'dine-in'
 
-export type BillStatus = 'open' | 'paid' | 'void'
+export type PaymentMode = 'upi' | 'card' | 'cash'
+
+// Snapshot of a cart line at settle time. Money in paise.
+export interface BillLine {
+  itemId: string
+  name: string
+  variantName: string | null
+  addOnNames: string[]
+  quantity: number
+  unitPrice: number
+  discount: Discount | null
+  discountAmount: number
+  lineTotal: number // after the item discount
+}
+
+export interface BillTotals {
+  subtotal: number
+  itemDiscount: number
+  billDiscount: number
+  cgst: number
+  sgst: number
+  roundOff: number
+  total: number
+}
 
 export interface Bill {
   id: string
-  number: number
-  createdAt: string
-  status: BillStatus
+  billNumber: string
+  token: number
   orderType: OrderType
+  cashier: string
+  customerId: string | null
+  createdAt: string
+  status: 'completed'
+  billingMs: number
   lines: BillLine[]
-  customerId?: string
-  payments: Payment[]
-  subtotal: number
-  cgst: number
-  sgst: number
-  total: number
+  billDiscount: Discount | null
+  totals: BillTotals
+}
+
+// One record per mode used. `amount` is the part of the bill it settled (never includes change).
+export interface Payment {
+  id: string
+  billId: string
+  mode: PaymentMode
+  amount: number // paise
+  reference?: string
+  cashReceived?: number // paise, cash only
+  changeDue?: number // paise, cash only
+  paidAt: string
 }

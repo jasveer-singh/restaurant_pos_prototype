@@ -1,12 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatRupees, toPaise } from '../lib/money'
 import { getAddOnGroups, getCategories, getItems } from '../lib/seed'
 import { calculateTotals, lineGross, lineNet } from '../lib/totals'
 import type { Discount } from '../lib/totals'
-import type { Item, OrderType } from '../lib/types'
+import { freshDraft } from '../lib/billState'
+import { getDefaultMode, saveBill, setDefaultMode } from '../lib/billStore'
+import type { PaymentInput } from '../lib/billStore'
+import type { Bill, BillLine, Item, OrderType, Payment, PaymentMode } from '../lib/types'
 import ConfigModal from './ConfigModal'
 import type { Config } from './ConfigModal'
 import DiscountModal from './DiscountModal'
+import { CashModal, MODE_LABEL, QrModal, SettledSummary, SplitModal } from './PaymentModals'
+import type { SplitPart } from './PaymentModals'
 
 interface CartLine {
   id: string
@@ -23,6 +28,8 @@ interface CartLine {
 }
 
 const POPULAR = 'popular'
+const MODES: PaymentMode[] = ['upi', 'card', 'cash']
+type SelectedMode = PaymentMode | 'split'
 
 // An exact short-code match wins outright; otherwise substring matches, best first.
 function searchItems(items: Item[], query: string): Item[] {
@@ -60,6 +67,13 @@ export default function BillingScreen() {
   const [locked, setLocked] = useState(false)
   const [configItem, setConfigItem] = useState<Item | null>(null)
   const [discountFor, setDiscountFor] = useState<'bill' | string | null>(null)
+  const [defaultMode, setDefaultModeState] = useState<PaymentMode>(getDefaultMode)
+  const [mode, setMode] = useState<SelectedMode>(defaultMode)
+  const [txnRef, setTxnRef] = useState('')
+  const [payModal, setPayModal] = useState<'cash' | 'split' | 'qr' | null>(null)
+  const [result, setResult] = useState<{ bill: Bill; payments: Payment[] } | null>(null)
+  const savingRef = useRef(false) // set on the first Settle press so a double tap can't save twice
+  const startRef = useRef<number | null>(null) // billing timer start
 
   const query = search.trim().toLowerCase()
   const visible = query ? searchItems(items, query) : categoryId === POPULAR
@@ -93,7 +107,8 @@ export default function BillingScreen() {
   }
 
   const onItemTap = (item: Item) => {
-    if (locked) return
+    if (result) newBill(true) // tapping an item after settling starts the next bill
+    else if (locked) return
     const needsChoice = item.variants.length > 1 || item.addOnGroupIds.length > 0
     if (needsChoice) return setConfigItem(item)
     const v = item.variants[0]
@@ -111,6 +126,118 @@ export default function BillingScreen() {
     )
 
   const removeLine = (id: string) => setLines((prev) => prev.filter((l) => l.id !== id))
+
+  // Billing timer: starts with the first line, resets when the cart empties.
+  useEffect(() => {
+    if (lines.length === 0) {
+      startRef.current = null
+      // an emptied cart is a fresh bill: a leftover bill discount or ref must not carry over
+      setBillDiscount(null)
+      setTxnRef('')
+    } else if (startRef.current === null) startRef.current = Date.now()
+  }, [lines.length])
+
+  const canSettle = lines.length > 0 && !locked
+  const zeroDue = lines.length > 0 && totals.total === 0
+
+  const finalize = (payments: PaymentInput[]) => {
+    if (savingRef.current) return
+    savingRef.current = true
+    setLocked(true)
+    try {
+      const snapshot: BillLine[] = lines.map((l) => ({
+        itemId: l.itemId,
+        name: l.itemName,
+        variantName: l.showVariant ? l.variantName : null,
+        addOnNames: l.addOnNames,
+        quantity: l.quantity,
+        unitPrice: l.unitPrice,
+        discount: l.discount,
+        discountAmount: lineGross(l) - lineNet(l),
+        lineTotal: lineNet(l),
+      }))
+      const saved = saveBill({
+        orderType,
+        lines: snapshot,
+        billDiscount,
+        totals: {
+          subtotal: totals.subtotal,
+          itemDiscount: totals.itemDiscount,
+          billDiscount: totals.billDiscount,
+          cgst: totals.cgst,
+          sgst: totals.sgst,
+          roundOff: totals.roundOff,
+          total: totals.total,
+        },
+        billingMs: Date.now() - (startRef.current ?? Date.now()),
+        payments,
+      })
+      setPayModal(null)
+      setResult(saved)
+    } catch {
+      savingRef.current = false
+      setLocked(false)
+      window.alert('Could not save the bill. Please try again.')
+    }
+  }
+
+  const settleMain = () => {
+    if (!canSettle || savingRef.current) return
+    if (zeroDue) return finalize([]) // nothing to collect: no payment record
+    if (mode === 'split') return setPayModal('split')
+    if (mode === 'cash') return setPayModal('cash')
+    finalize([{ mode, amount: totals.total, reference: txnRef || undefined }])
+  }
+
+  const settleCash = (cashReceived: number) =>
+    finalize([{ mode: 'cash', amount: totals.total, cashReceived }])
+  const settleSplit = (parts: SplitPart[]) =>
+    finalize(parts.map((p) => ({ ...p, cashReceived: p.mode === 'cash' ? p.amount : undefined })))
+
+  const newBill = (keepSearch = false) => {
+    savingRef.current = false
+    startRef.current = null
+    const draft = freshDraft(defaultMode)
+    setLines([])
+    setBillDiscount(draft.billDiscount)
+    setOrderType(draft.orderType)
+    setLocked(false)
+    setMode(draft.mode)
+    setTxnRef(draft.txnRef)
+    if (!keepSearch) setSearch('')
+    setResult(null)
+  }
+
+  const closeModals = () => {
+    setPayModal(null)
+    setConfigItem(null)
+    setDiscountFor(null)
+  }
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (result) {
+        if (e.key === 'Enter' && e.shiftKey) {
+          e.preventDefault()
+          newBill()
+        }
+        return
+      }
+      const open = payModal || configItem || discountFor
+      if (e.key === 'Escape' && open) closeModals()
+      else if (e.key === 'Enter' && e.shiftKey && !open) {
+        e.preventDefault()
+        settleMain()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
+  const pickMode = (m: PaymentMode) => {
+    setMode(m)
+    setTxnRef('')
+  }
 
   const editingLine = lines.find((l) => l.id === discountFor)
 
@@ -153,7 +280,7 @@ export default function BillingScreen() {
               const prices = item.variants.map((v) => v.price)
               const min = Math.min(...prices)
               return (
-                <button key={item.id} className="tile" disabled={locked} onClick={() => onItemTap(item)}>
+                <button key={item.id} className="tile" disabled={locked && !result} onClick={() => onItemTap(item)}>
                   <span className={'veg ' + (item.isVeg ? 'v' : 'nv')} />
                   <span className="tile-name">{item.name}</span>
                   <span className="tile-meta">
@@ -167,6 +294,9 @@ export default function BillingScreen() {
         </section>
 
         <aside className="cart">
+          {result ? (
+            <SettledSummary bill={result.bill} payments={result.payments} onNewBill={() => newBill()} />
+          ) : (
           <ul className="cart-list">
             {lines.map((l) => {
               const net = lineNet(l)
@@ -193,6 +323,7 @@ export default function BillingScreen() {
               )
             })}
           </ul>
+          )}
 
           <footer className="cart-foot">
             <dl className="totals">
@@ -203,18 +334,67 @@ export default function BillingScreen() {
               <dt>Round off</dt><dd>{totals.roundOff > 0 ? '+' : ''}{formatRupees(totals.roundOff)}</dd>
               <dt className="grand">Total</dt><dd className="grand">{formatRupees(totals.total)}</dd>
             </dl>
-            {locked && <p className="notice">Payment screen coming next</p>}
+            {!zeroDue && (
+              <>
+            <div className="chips modes">
+              {MODES.map((m) => (
+                <button key={m} className={'chip' + (mode === m ? ' on' : '')} disabled={locked} onClick={() => pickMode(m)}>
+                  {MODE_LABEL[m]}
+                </button>
+              ))}
+              <button className={'link' + (mode === 'split' ? ' on' : '')} disabled={!canSettle} onClick={() => { setMode('split'); setPayModal('split') }}>
+                Split
+              </button>
+            </div>
+            <div className="pay-extras">
+              {mode === 'upi' && totals.total > 0 && (
+                <button className="link" disabled={locked} onClick={() => setPayModal('qr')}>Show QR</button>
+              )}
+              {(mode === 'upi' || mode === 'card') && (
+                <div className="ref-wrap">
+                  <label className="lbl" htmlFor="txn-ref">Txn ref (last 4)</label>
+                  <input
+                    id="txn-ref"
+                    className="field ref"
+                    inputMode="numeric"
+                    maxLength={4}
+                    value={txnRef}
+                    disabled={locked}
+                    onChange={(e) => setTxnRef(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  />
+                </div>
+              )}
+              {mode !== 'split' && mode !== defaultMode && (
+                <button
+                  className="link"
+                  onClick={() => {
+                    setDefaultMode(mode)
+                    setDefaultModeState(mode)
+                  }}
+                >
+                  Make {MODE_LABEL[mode]} the default
+                </button>
+              )}
+            </div>
+              </>
+            )}
             <div className="foot-actions">
               <button className="btn" disabled={locked || lines.length === 0} onClick={() => setDiscountFor('bill')}>
                 Discount
               </button>
-              <button className="btn primary" disabled={locked || lines.length === 0} onClick={() => setLocked(true)}>
-                Collect Payment
+              <button className="btn primary" disabled={!canSettle} onClick={settleMain}>
+                {zeroDue
+                  ? 'Settle · No payment due'
+                  : `Settle${mode === 'split' ? ' · Split' : ` · ${MODE_LABEL[mode]}`} · ${formatRupees(totals.total).replace('.00', '')}`}
               </button>
             </div>
           </footer>
         </aside>
       </div>
+
+      {payModal === 'qr' && <QrModal total={totals.total} onClose={() => setPayModal(null)} />}
+      {payModal === 'cash' && <CashModal total={totals.total} onSettle={settleCash} onClose={() => setPayModal(null)} />}
+      {payModal === 'split' && <SplitModal total={totals.total} onSettle={settleSplit} onClose={() => setPayModal(null)} />}
 
       {configItem && (
         <ConfigModal

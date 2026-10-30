@@ -20,7 +20,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .toggle button:last-child { border-radius: 0 8px 8px 0; border-left: 0; }
 .toggle button.on { background: #b45f06; border-color: #b45f06; color: #fff; }
 
-.columns { flex: 1; min-height: 0; display: grid; grid-template-columns: 4fr 14fr 6fr; }
+.columns { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 3.2fr 1.8fr; }
 .categories { overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 8px; background: #ebe6dc; }
 .cat { text-align: left; padding: 0 12px; min-height: 56px; }
 .cat.on { background: #b45f06; border-color: #b45f06; color: #fff; }
@@ -72,3 +72,36 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .chip { padding: 0 14px; }
 .chip.on { background: #b45f06; border-color: #b45f06; color: #fff; }
 .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+/* payments */
+.chips.modes { flex-wrap: nowrap; gap: 6px; margin-bottom: 6px; }
+.chips.modes .chip { flex: 1; padding: 0 4px; }
+.link { background: none; border: 0; color: #b45f06; text-decoration: underline; padding: 0 8px; }
+.link.on { font-weight: 700; }
+.pay-extras { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; margin-bottom: 6px; }
+.field.ref { width: 150px; font-size: 14px; }
+.lbl { display: block; font-size: 13px; color: #6a6358; margin: 8px 0 4px; }
+.chips.quick { margin-top: 10px; }
+.change { display: flex; justify-content: space-between; align-items: baseline; margin-top: 14px; }
+.change strong { font-size: 32px; }
+.change .ok { color: #1a8a3a; }
+.change .bad { color: #b3261e; }
+.split-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.split-row .lbl { width: 100%; margin-bottom: 0; }
+.split-row .field { width: 110px; }
+.split-row .field.ref { width: 150px; }
+.modal.qr { text-align: center; }
+
+/* settled summary (cart panel) */
+.settled { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 12px; display: flex; flex-direction: column; gap: 10px; }
+.settled-line { margin: 0; font-size: 16px; font-weight: 600; color: #1a8a3a; }
+.settled-change { font-size: 34px; font-weight: 800; line-height: 1.1; }
+.settled-token { font-size: 26px; font-weight: 700; color: #b45f06; }
+.settled-modes { display: grid; grid-template-columns: 1fr auto; margin: 0; font-size: 13px; }
+.settled-modes dt, .settled-modes dd { margin: 0; }
+.settled-modes dd { text-align: right; }
+.settled-time { margin: 0; font-size: 12px; color: #8a8478; }
+.settled .btn { margin-top: auto; }
+.ref-wrap { display: flex; flex-direction: column; }
+.ref-wrap .lbl { margin: 0 0 2px; }
+.split-row .ref-wrap { margin-left: 4px; }
