@@ -20,9 +20,14 @@ Browser-based POS prototype for a 12-outlet quick-service café chain, designed 
 - UPI and Card confirmation happens outside the POS (mocked): the cashier confirms the payment on the terminal or phone, then taps Settle once.
 - Payment amounts exclude change. For cash, the payment record holds the part of the bill settled, plus cashReceived and changeDue separately.
 - Zero-total bills (for example a 100% discount) save with no payment record.
+- After settle, the first version printed the bill only and the KOT was missing. I caught it in testing and Claude fixed it.
+- I changed the original auto-print-on-every-settle design to an on-demand receipts view with an optional auto-print toggle, because two print dialogs per bill would slow the counter.
 - The cashier is fixed as "Cashier 1" (no login yet).
 - Bill number = DDMMYY + the daily counter padded to 4 digits (30 Oct 2026, first bill: 3010260001). The counter is per local calendar day and increments when a bill is settled. Token = the counter wrapped to 1-999.
 - To reset test data, clear site data in the browser.
+- Printing is browser-based (the browser print dialog) on 80mm paper. One print job holds the bill, a page break, then the KOT. The GSTIN and FSSAI numbers and the restaurant address on the bill are sample values.
+- "Auto-print on settle" is a checkbox in the settled summary, off by default and remembered per browser. With it off, the cashier prints on demand from "Reprint" or "View bill & KOT".
+- Any print after the first is stamped DUPLICATE COPY on the bill (not the KOT). Each print job is counted in the bill's printCount.
 
 ## Mock data
 - menu.json in the restaurant_pos folder is the seed data. Load it on first run.
@@ -31,6 +36,8 @@ Browser-based POS prototype for a 12-outlet quick-service café chain, designed 
 - UPI QR and payment confirmation: the QR is labelled "Mock QR, no real payment" and encodes a upi:// link with the exact amount. Nothing checks that money arrived.
 - Card machine: no integration; the cashier confirms the card payment outside the POS.
 - Cashier identity: fixed as "Cashier 1".
+- Printers: printing uses the browser print dialog. A real deployment would print silently to a counter printer and a kitchen printer via a print agent or ESC/POS.
+- GSTIN, FSSAI and restaurant address on the bill are sample values.
 
 ## Tools used
 - AI: Claude Code ($20 plan), running in the terminal
@@ -42,8 +49,11 @@ Browser-based POS prototype for a 12-outlet quick-service café chain, designed 
 - Zero-total bills first showed 'Settle · UPI · ₹0'. I changed them to 'No payment due' with no payment record.
 
 ## What I would build next
-- Manager approval for large discounts and voids
+- Manager approval for large discounts, voids and reprints
 - Wallet and loyalty payment modes
 - Tips
 - Shift handover and cash reconciliation
 - Silent printing
+- Station-wise KOTs
+- KDS (kitchen display)
+- E-bill as an option
