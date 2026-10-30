@@ -89,6 +89,7 @@ export interface Bill {
   createdAt: string
   status: 'completed'
   billingMs: number
+  printCount: number // print jobs started for this bill
   lines: BillLine[]
   billDiscount: Discount | null
   totals: BillTotals

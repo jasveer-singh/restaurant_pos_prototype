@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { formatRupees, toPaise } from '../lib/money'
 import { getAddOnGroups, getCategories, getItems } from '../lib/seed'
 import { calculateTotals, lineGross, lineNet } from '../lib/totals'
 import type { Discount } from '../lib/totals'
 import { freshDraft } from '../lib/billState'
-import { getDefaultMode, saveBill, setDefaultMode } from '../lib/billStore'
+import { getAutoPrint, getCustomer, getDefaultMode, incrementPrintCount, saveBill, setAutoPrint, setDefaultMode } from '../lib/billStore'
 import type { PaymentInput } from '../lib/billStore'
 import type { Bill, BillLine, Item, OrderType, Payment, PaymentMode } from '../lib/types'
 import ConfigModal from './ConfigModal'
 import type { Config } from './ConfigModal'
 import DiscountModal from './DiscountModal'
-import { CashModal, MODE_LABEL, QrModal, SettledSummary, SplitModal } from './PaymentModals'
+import { BillReceiptView, KotReceiptView } from './Receipt'
+import { buildBillReceipt, buildKotReceipt } from '../lib/receipts'
+import { CashModal, MODE_LABEL, QrModal, ReceiptsModal, SettledSummary, SplitModal } from './PaymentModals'
 import type { SplitPart } from './PaymentModals'
 
 interface CartLine {
@@ -72,6 +75,10 @@ export default function BillingScreen() {
   const [txnRef, setTxnRef] = useState('')
   const [payModal, setPayModal] = useState<'cash' | 'split' | 'qr' | null>(null)
   const [result, setResult] = useState<{ bill: Bill; payments: Payment[] } | null>(null)
+  const [autoPrint, setAutoPrintState] = useState(getAutoPrint)
+  const [printJob, setPrintJob] = useState<{ bill: Bill; payments: Payment[] } | null>(null)
+  const [viewOpen, setViewOpen] = useState(false)
+  const autoPrintedRef = useRef<string | null>(null)
   const savingRef = useRef(false) // set on the first Settle press so a double tap can't save twice
   const startRef = useRef<number | null>(null) // billing timer start
 
@@ -205,6 +212,7 @@ export default function BillingScreen() {
     setMode(draft.mode)
     setTxnRef(draft.txnRef)
     if (!keepSearch) setSearch('')
+    setViewOpen(false)
     setResult(null)
   }
 
@@ -217,7 +225,8 @@ export default function BillingScreen() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (result) {
-        if (e.key === 'Enter' && e.shiftKey) {
+        if (e.key === 'Escape' && viewOpen) setViewOpen(false)
+        else if (e.key === 'Enter' && e.shiftKey) {
           e.preventDefault()
           newBill()
         }
@@ -233,6 +242,34 @@ export default function BillingScreen() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   })
+
+  // One print job = bill, page break, KOT. The job is frozen at the printCount it started with,
+  // so the DUPLICATE stamp reflects earlier prints only; the count is bumped as the job starts.
+  const startPrint = (r: { bill: Bill; payments: Payment[] }) => {
+    setPrintJob({ bill: r.bill, payments: r.payments })
+    const count = incrementPrintCount(r.bill.id)
+    setResult((cur) => (cur && cur.bill.id === r.bill.id ? { ...cur, bill: { ...cur.bill, printCount: count } } : cur))
+  }
+
+  // Print on the frame after the job has rendered. A cancelled dialog changes nothing.
+  useEffect(() => {
+    if (!printJob) return
+    const id = requestAnimationFrame(() => window.print())
+    return () => cancelAnimationFrame(id)
+  }, [printJob])
+
+  useEffect(() => {
+    const done = () => setPrintJob(null)
+    window.addEventListener('afterprint', done)
+    return () => window.removeEventListener('afterprint', done)
+  }, [])
+
+  // Auto-print once per saved bill, after the settled summary is on screen.
+  useEffect(() => {
+    if (!result || autoPrintedRef.current === result.bill.id) return
+    autoPrintedRef.current = result.bill.id
+    if (autoPrint) startPrint(result)
+  }, [result])
 
   const pickMode = (m: PaymentMode) => {
     setMode(m)
@@ -295,7 +332,18 @@ export default function BillingScreen() {
 
         <aside className="cart">
           {result ? (
-            <SettledSummary bill={result.bill} payments={result.payments} onNewBill={() => newBill()} />
+            <SettledSummary
+              bill={result.bill}
+              payments={result.payments}
+              autoPrint={autoPrint}
+              onAutoPrint={(on) => {
+                setAutoPrint(on)
+                setAutoPrintState(on)
+              }}
+              onReprint={() => startPrint(result)}
+              onView={() => setViewOpen(true)}
+              onNewBill={() => newBill()}
+            />
           ) : (
           <ul className="cart-list">
             {lines.map((l) => {
@@ -392,6 +440,26 @@ export default function BillingScreen() {
         </aside>
       </div>
 
+      {printJob &&
+        createPortal(
+          <div id="print-root">
+            <section className="print-page">
+              <BillReceiptView data={buildBillReceipt(printJob.bill, { payments: printJob.payments, customer: getCustomer(printJob.bill.customerId) })} />
+            </section>
+            <section className="print-page">
+              <KotReceiptView data={buildKotReceipt(printJob.bill)} />
+            </section>
+          </div>,
+          document.body,
+        )}
+      {result && viewOpen && (
+        <ReceiptsModal
+          bill={result.bill}
+          payments={result.payments}
+          onPrint={() => startPrint(result)}
+          onClose={() => setViewOpen(false)}
+        />
+      )}
       {payModal === 'qr' && <QrModal total={totals.total} onClose={() => setPayModal(null)} />}
       {payModal === 'cash' && <CashModal total={totals.total} onSettle={settleCash} onClose={() => setPayModal(null)} />}
       {payModal === 'split' && <SplitModal total={totals.total} onSettle={settleSplit} onClose={() => setPayModal(null)} />}

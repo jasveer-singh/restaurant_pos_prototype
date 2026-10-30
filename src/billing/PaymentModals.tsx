@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { formatRupees } from '../lib/money'
 import { cashChange, quickCashAmounts, validateSplit } from '../lib/payments'
+import { getCustomer } from '../lib/billStore'
+import { buildBillReceipt, buildKotReceipt } from '../lib/receipts'
 import type { Bill, Payment, PaymentMode } from '../lib/types'
+import { BillReceiptView, KotReceiptView } from './Receipt'
 
 const MODE_LABEL: Record<PaymentMode, string> = { upi: 'UPI', card: 'Card', cash: 'Cash' }
 export { MODE_LABEL }
@@ -169,12 +172,22 @@ export function SplitModal({
 export function SettledSummary({
   bill,
   payments,
+  autoPrint,
+  onAutoPrint,
+  onReprint,
+  onView,
   onNewBill,
 }: {
   bill: Bill
   payments: Payment[]
+  autoPrint: boolean
+  onAutoPrint: (on: boolean) => void
+  onReprint: () => void
+  onView: () => void
   onNewBill: () => void
 }) {
+  const [showBill, setShowBill] = useState(false)
+  const [showKot, setShowKot] = useState(false)
   const change = payments.reduce((s, p) => s + (p.changeDue ?? 0), 0)
   const cashOnly = payments.length === 1 && payments[0].mode === 'cash' // no change calculation in split
   return (
@@ -192,7 +205,61 @@ export function SettledSummary({
         </dl>
       )}
       <p className="settled-time">Billed in {(bill.billingMs / 1000).toFixed(1)} s</p>
-      <button className="btn primary" onClick={onNewBill}>New bill</button>
+      <label className="auto-print">
+        <input type="checkbox" checked={autoPrint} onChange={(e) => onAutoPrint(e.target.checked)} />
+        Auto-print on settle
+      </label>
+      <div className="print-actions">
+        <button className="btn" onClick={onReprint}>Reprint</button>
+        <button className="btn" onClick={onView}>View bill &amp; KOT</button>
+        <button className={'btn' + (showBill ? ' on' : '')} onClick={() => setShowBill(!showBill)}>Preview bill</button>
+        <button className={'btn' + (showKot ? ' on' : '')} onClick={() => setShowKot(!showKot)}>Preview KOT</button>
+      </div>
+      {showBill && (
+        <div className="preview">
+          <BillReceiptView data={buildBillReceipt(bill, { payments, customer: getCustomer(bill.customerId) })} />
+        </div>
+      )}
+      {showKot && (
+        <div className="preview">
+          <KotReceiptView data={buildKotReceipt(bill)} />
+        </div>
+      )}
+      <button className="btn primary new-bill" onClick={onNewBill}>New bill</button>
+    </div>
+  )
+}
+
+export function ReceiptsModal({
+  bill,
+  payments,
+  onPrint,
+  onClose,
+}: {
+  bill: Bill
+  payments: Payment[]
+  onPrint: () => void
+  onClose: () => void
+}) {
+  return (
+    <div className="backdrop" onClick={onClose}>
+      <div className="modal receipts-modal" onClick={(e) => e.stopPropagation()}>
+        <h2>Bill &amp; KOT</h2>
+        <div className="receipts-scroll">
+          <div className="preview">
+            <BillReceiptView data={buildBillReceipt(bill, { payments, customer: getCustomer(bill.customerId) })} />
+          </div>
+          <div className="preview">
+            <KotReceiptView data={buildKotReceipt(bill)} />
+          </div>
+        </div>
+        <div className="actions">
+          <button className="btn" onClick={onClose}>Close</button>
+          <button className="btn primary" onClick={onPrint}>
+            {(bill.printCount ?? 0) >= 1 ? 'Reprint' : 'Print bill + KOT'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { readJSON, writeJSON } from './storage'
 import { nextNumber } from './numbering'
 import type { DayCounter } from './numbering'
-import type { Bill, BillLine, BillTotals, OrderType, Payment, PaymentMode } from './types'
+import type { Bill, BillLine, Customer, BillTotals, OrderType, Payment, PaymentMode } from './types'
 import type { Discount } from './totals'
 
 // localStorage keys (prefixed "chaico:" by storage.ts)
@@ -53,6 +53,7 @@ export function saveBill(input: SaveBillInput): { bill: Bill; payments: Payment[
     createdAt: now.toISOString(),
     status: 'completed',
     billingMs: input.billingMs,
+    printCount: 0,
     lines: input.lines,
     billDiscount: input.billDiscount,
     totals: input.totals,
@@ -71,3 +72,24 @@ export function saveBill(input: SaveBillInput): { bill: Bill; payments: Payment[
   writeJSON(KEYS.counter, num.counter)
   return { bill, payments }
 }
+
+// The only change ever made to a saved bill: count a started print job.
+export function incrementPrintCount(billId: string): number {
+  const bills = getBills()
+  let count = 0
+  writeJSON(
+    KEYS.bills,
+    bills.map((b) => {
+      if (b.id !== billId) return b
+      count = (b.printCount ?? 0) + 1
+      return { ...b, printCount: count }
+    }),
+  )
+  return count
+}
+
+export const getCustomer = (id: string | null) =>
+  id ? (readJSON<Customer[]>('customers') ?? []).find((c) => c.id === id) ?? null : null
+
+export const getAutoPrint = (): boolean => readJSON<boolean>('autoPrint') === true // default OFF
+export const setAutoPrint = (on: boolean) => writeJSON('autoPrint', on)

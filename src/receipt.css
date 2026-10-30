@@ -1,0 +1,24 @@
+/* 80mm thermal paper: black on white only. Content width 74mm. */
+@page { size: 80mm auto; margin: 0; }
+
+.receipt { width: 80mm; box-sizing: border-box; padding: 5mm 3mm; background: #fff; color: #000; font-family: sans-serif; line-height: 1.25; }
+.receipt .logo-wrap { display: flex; justify-content: center; }
+.receipt .sep { border: 0; border-top: 1px dashed #000; margin: 2mm 0; }
+.receipt .gap { height: 5mm; }
+.receipt .row { display: grid; align-items: start; column-gap: 3mm; margin-bottom: 1mm; }
+.receipt .bill-row { grid-template-columns: 40mm 10mm 18mm; }
+.receipt .kot-row { grid-template-columns: 61mm 10mm; }
+.receipt .item { min-width: 0; overflow-wrap: anywhere; }
+.receipt .pair { display: flex; justify-content: space-between; }
+
+.preview { background: #fff; border: 1px solid #000; overflow-x: auto; }
+
+/* receipts print from #print-root only */
+#print-root { display: none; }
+@media print {
+  html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
+  #root { display: none !important; }
+  #print-root { display: block; }
+  #print-root .print-page { display: block; }
+  #print-root .print-page + .print-page { break-before: page; page-break-before: always; }
+}
