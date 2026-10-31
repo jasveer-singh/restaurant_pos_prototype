@@ -4,8 +4,6 @@ Browser-based POS prototype for a 12-outlet quick-service café chain, designed 
 
 **Live link:** https://restaurantposprototype.vercel.app/
 
-**Measured billing time:** TBD
-
 ## Try it in 2 minutes
 1. Open the live link. The Popular tab shows the best sellers. Tap three items; items with variants or add-ons open a choice popup (for example Masala Chai: Regular + Extra Ginger).
 2. In the customer field at the top of the cart, type a phone number such as `9876543210` and press Enter (or tap Attach). Customers are optional and must be attached before settling.
@@ -32,6 +30,18 @@ Browser-based POS prototype for a 12-outlet quick-service café chain, designed 
 - **Day summary:** reconciliation, headline numbers, sales by payment mode, top 5 items, new vs repeat customers and a bills table, for any date.
 - **Persistence:** bills, payments, customers, the daily counter, the default payment mode and the auto-print setting survive a refresh (see the limitation below for the cart).
 
+## Measured billing time
+App-measured, from the first cart line to Settle, on the deployed site. The time is stored with each bill and shown on the settle screen and the day summary.
+
+| Scenario | Time | Runs |
+|---|---|---|
+| Simple manual bill | under 10 s | about 15 runs |
+| Repeat order, 3 items, one tap, default payment | about 5 s | 15 |
+| 3 items with several add-ons, single payment | about 15 s | 4 runs |
+| 3 items with several add-ons, split payment (stress case) | about 20 s | 3 runs |
+
+For repeat orders the timer starts when the order is added to the cart, so it does not include entering the customer's phone number, which takes about 3 seconds. The brief's target is a repeat order of 3 items in under 20 seconds. The stress case sits at the limit, and split payment plus modifiers is where the next speed-up would go.
+
 ## Assumptions
 - The restaurant has a touch-based POS machine that also supports keyboard and mouse input. There is no mobile interface.
 - The POS runs in a web browser, no installation needed.
@@ -55,7 +65,7 @@ Browser-based POS prototype for a 12-outlet quick-service café chain, designed 
 - Any print after the first is stamped DUPLICATE COPY on the bill (not the KOT). Each print job is counted in the bill's printCount.
 
 ## Mock data
-- menu.json in the restaurant_pos folder is the seed data. It is loaded on first run (when nothing is stored yet) and never overwrites stored data.
+- menu.json in the repo root is the seed data. It is loaded on first run (when nothing is stored yet) and never overwrites stored data.
 
 ## What is mocked
 - Storage is the browser's localStorage only. It is per browser and per device, lost when site data is cleared, and there is no backend. Tills do not share data.
